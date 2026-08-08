@@ -21,13 +21,14 @@ public class OpenRouterController {
     public ResponseEntity<?> generarDocumentos(@RequestBody Map<String, String> request) {
         String url = request.get("url");
         String descripcion = request.get("descripcion");
+        String cvBase = request.get("cvBase");
 
         if ((url == null || url.isEmpty()) && (descripcion == null || descripcion.isEmpty())) {
             return ResponseEntity.badRequest()
                     .body("Debes proporcionar al menos una URL o la descripción de la oferta.");
         }
 
-        Map<String, String> resultado = openRouterService.analizarYAdaptar(url, descripcion);
+        Map<String, String> resultado = openRouterService.analizarYAdaptar(url, descripcion, cvBase);
         return ResponseEntity.ok(resultado);
     }
 }

@@ -34,7 +34,7 @@ public class OpenRouterService {
     private static final String OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
     private final RestTemplate restTemplate = new RestTemplate();
 
-    // Lee el CV base desde el classpath para usarlo como plantilla de conocimiento.
+    // Lee el CV base desde el classpath como respaldo, por si el cliente no envía uno.
     private String leerCvDesdeWord() {
         try {
             ClassPathResource resource = new ClassPathResource("templates/cv_base.docx");
@@ -49,11 +49,11 @@ public class OpenRouterService {
     }
 
     @SuppressWarnings("unchecked")
-    public Map<String, String> analizarYAdaptar(String urlOferta, String descripcionTexto) {
+    public Map<String, String> analizarYAdaptar(String urlOferta, String descripcionTexto, String cvBase) {
         String contenidoOferta = (descripcionTexto != null && !descripcionTexto.isEmpty())
                 ? descripcionTexto
                 : urlOferta;
-        String cvBaseReal = leerCvDesdeWord();
+        String cvBaseReal = (cvBase != null && !cvBase.isBlank()) ? cvBase : leerCvDesdeWord();
 
         String prompt = "Actúa como un experto en reclutamiento técnico. Analiza minuciosamente la siguiente oferta:\n"
                 + contenidoOferta + "\n\n"

@@ -1,16 +1,22 @@
-// Esta clase es un controlador REST para manejar las solicitudes relacionadas con la generación de CVs en formato PDF y el envío de correos electrónicos con los CVs adaptados. Proporciona endpoints para generar un PDF a partir del contenido del CV y para enviar un correo electrónico con el CV adaptado. Utiliza el servicio de CV para realizar las operaciones necesarias y devuelve respuestas adecuadas según el resultado de cada operación.
+// Controlador REST para la generación de PDFs del CV adaptado y la extracción
+// de texto de documentos .docx (para que el usuario pueda subir su CV base).
 
 package com.applyflow.backend.controller;
 
 import com.applyflow.backend.service.CVService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cv")
 public class CVController {
+
+    private static final Logger log = LoggerFactory.getLogger(CVController.class);
 
     @Autowired
     private CVService cvService;
@@ -31,22 +37,22 @@ public class CVController {
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 
-    @PostMapping("/send-email")
-    public ResponseEntity<?> enviarCandidatura(@RequestBody Map<String, String> request) {  // Maneja solicitudes POST para enviar un correo electrónico con el CV adaptado
-        String destinatario = request.get("destinatario");
-        String cuerpoEmail = request.get("cuerpoEmail");
-        String contenidoCv = request.get("contenidoCv");
-
-        if (destinatario == null || destinatario.isEmpty()) {
-            return ResponseEntity.badRequest().body("El email del destinatario es obligatorio.");
+    @PostMapping("/extract-text")
+    public ResponseEntity<String> extraerTexto(@RequestParam("file") MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return ResponseEntity.badRequest().body("Debes subir un archivo .docx.");
         }
 
         try {
-            cvService.enviarCandidatura(destinatario, cuerpoEmail, contenidoCv);
-            return ResponseEntity.ok(Map.of("message", "Correo electrónico enviado con éxito."));
+            String texto = cvService.extraerTextoDocx(file);
+            if (texto == null || texto.isBlank()) {
+                return ResponseEntity.badRequest().body("No se pudo extraer texto del documento.");
+            }
+            return ResponseEntity.ok(texto);
         } catch (Exception e) {
+            log.error("Error al extraer texto del .docx", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al procesar o despachar el correo electrónico: " + e.getMessage());
+                    .body("No se pudo extraer el texto del documento. Asegúrate de que sea un .docx válido.");
         }
     }
 }
