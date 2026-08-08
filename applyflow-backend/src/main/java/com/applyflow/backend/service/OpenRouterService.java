@@ -31,6 +31,9 @@ public class OpenRouterService {
     @Value("${app.openrouter.referer:http://localhost:8080}")
     private String referer;
 
+    @Value("${openrouter.model:openrouter/free}")
+    private String modelo;
+
     private static final String OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -80,7 +83,7 @@ public class OpenRouterService {
 
             Map<String, Object> messageObj = Map.of("role", "user", "content", prompt);
             Map<String, Object> bodyMap = new HashMap<>();
-            bodyMap.put("model", "openrouter/auto");
+            bodyMap.put("model", modelo);
             bodyMap.put("messages", List.of(messageObj));
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(bodyMap, headers);

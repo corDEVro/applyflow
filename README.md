@@ -55,10 +55,13 @@ Abre `http://localhost:5173`. La primera vez pedirá tu CV base (pegarlo o subir
 
 | Variable | Dónde | Descripción | Por defecto |
 |---|---|---|---|
-| `OPENROUTER_API_KEY` | Backend | Clave de la API de OpenRouter | *(vacía)* |
+| `OPENROUTER_API_KEY` | Backend | Clave de la API de OpenRouter (gratis de crear) | *(vacía)* |
+| `OPENROUTER_MODEL` | Backend | Modelo de IA (usa `:free` o `openrouter/free` para que cueste 0 €) | `openrouter/free` |
 | `CORS_ALLOWED_ORIGINS` | Backend | Orígenes permitidos (separados por comas) | `http://localhost:5173` |
 | `OPENROUTER_REFERER` | Backend | URL pública reportada a OpenRouter | `http://localhost:8080` |
 | `VITE_API_URL` | Frontend | URL del backend | `http://localhost:8080` |
+
+> 💡 **Gratis de verdad:** OpenRouter permite crear la API key sin tarjeta y usar modelos `:free` con saldo 0 € (límite 50 peticiones/día). Con `OPENROUTER_MODEL=openrouter/free` la IA no cuesta nada.
 
 ---
 
