@@ -10,7 +10,7 @@ const KEY_CV_BASE = "af_cv_base";
 const KEY_CV_SKIPPED = "af_cv_skipped";
 const KEY_USO = "af_uso_diario";
 
-const LIMITE_IA_DIARIO = 5;
+const LIMITE_IA_DIARIO = 10;
 
 export function limiteDiario(): number {
   return LIMITE_IA_DIARIO;

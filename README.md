@@ -1,82 +1,30 @@
 # ApplyFlow 🚀
 
-ApplyFlow es una app de gestión de candidaturas y optimización de perfiles profesionales. Centraliza ofertas de empleo, automatiza el seguimiento de estados y adapta currículums y cartas de presentación con IA (OpenRouter) según cada oferta.
+**ApplyFlow** es tu asistente para buscar trabajo. Centraliza tus candidaturas de empleo en un solo sitio, te ayuda a seguirlas y adapta tu currículum y tu carta de presentación a cada oferta con la ayuda de inteligencia artificial.
 
-**MVP sin base de datos:** los datos de cada usuario viven solo en su navegador (`localStorage`), con copias de seguridad Exportar/Importar en JSON.
+## ✨ Qué puedes hacer
 
-**Límite gratuito:** cada usuario tiene **5 análisis de IA al día** (contador en su navegador), lo que permite hasta ~10 usuarios con el plan gratis de OpenRouter. La opción premium (API key propia del usuario) llegará en una versión futura.
+- **Centro de Control** — Añade una oferta pegando únicamente su URL: ApplyFlow extrae solo el puesto, la empresa, el salario y la plataforma.
+- **Resumen de Ofertas** — Consulta y actualiza el estado de todas tus candidaturas (Inscrito, En Proceso, Descartado, Contratado) en una sola tabla.
+- **Currículum Vitae** — Pega o sube tu CV base una vez y, para cada oferta, ApplyFlow:
+  1. Analiza las palabras clave que más valora la empresa.
+  2. Adapta tu currículum a los requisitos de la oferta.
+  3. Escribe una carta de presentación lista para enviar.
+  4. Genera tu CV adaptado en PDF.
+  5. Abre tu correo con la carta preparada para que adjuntes el PDF y envíes la candidatura.
 
----
+## 🚀 Cómo empezar
 
-## 🛠️ Arquitectura
+1. Abre la aplicación y, la primera vez, te pedirá tu **CV base**: pégalo como texto o sube tu archivo `.docx`.
+2. Ve a **Centro de Control**, pega la URL de una oferta y guárdala.
+3. Ve a **Currículum Vitae**, pega la oferta (URL o descripción) y pulsa **Analizar con IA**.
 
-- **Frontend (React + TypeScript + Vite + Tailwind):** interfaz SPA. Persiste los datos en `localStorage` a través de la capa única `src/storage.ts`.
-- **Backend (Spring Boot + Java):** API REST mínima que hace tres cosas:
-  1. **IA**: `/api/ai/generate` — analiza la oferta y adapta CV + carta + email (OpenRouter).
-  2. **PDF**: `/api/cv/generate-pdf` — genera el CV adaptado en PDF (OpenPDF).
-  3. **Extracción**: `/api/cv/extract-text` — convierte un `.docx` en texto (CV base) y `/api/offer/extract` — extrae los datos de una oferta a partir de su URL.
+## 🔒 Gratis y privado
 
-El envío de candidaturas se hace con `mailto:`: se abre el correo del usuario con la carta preparada y él adjunta el PDF.
+- La aplicación es **gratuita**, con **10 análisis de IA al día por usuario**.
+- Tus datos (candidaturas y CV) se guardan **solo en tu navegador** y no viajan a ningún servidor.
+- Usa **Exportar / Importar datos** para hacer copias de seguridad o pasar tu información a otro dispositivo.
 
----
+## 👋 Contacto
 
-## ✅ Requisitos
-
-- **Java 21+** (JDK)
-- **Node.js 20+** y **pnpm**
-- Una cuenta en **[OpenRouter](https://openrouter.ai)** para obtener una API key
-
----
-
-## 🚀 Puesta en marcha (local)
-
-### 1. Backend (`applyflow-backend`)
-
-```bash
-cd applyflow-backend
-export OPENROUTER_API_KEY=tu_clave
-./mvnw spring-boot:run
-```
-
-Sin `OPENROUTER_API_KEY`, la IA devuelve un error controlado; el resto de funciones siguen funcionando.
-
-### 2. Frontend (`applyflow-frontend`)
-
-```bash
-cd applyflow-frontend
-cp .env.example .env    # ajusta VITE_API_URL si el backend no está en localhost:8080
-pnpm install
-pnpm dev
-```
-
-Abre `http://localhost:5173`. La primera vez pedirá tu CV base (pegarlo o subir tu `.docx`).
-
----
-
-## ⚙️ Variables de entorno
-
-| Variable | Dónde | Descripción | Por defecto |
-|---|---|---|---|
-| `OPENROUTER_API_KEY` | Backend | Clave de la API de OpenRouter (gratis de crear) | *(vacía)* |
-| `OPENROUTER_MODEL` | Backend | Modelo de IA (usa `:free` o `openrouter/free` para que cueste 0 €) | `openrouter/free` |
-| `CORS_ALLOWED_ORIGINS` | Backend | Orígenes permitidos (separados por comas) | `http://localhost:5173` |
-| `OPENROUTER_REFERER` | Backend | URL pública reportada a OpenRouter | `http://localhost:8080` |
-| `VITE_API_URL` | Frontend | URL del backend | `http://localhost:8080` |
-
-> 💡 **Gratis de verdad:** OpenRouter permite crear la API key sin tarjeta y usar modelos `:free` con saldo 0 € (límite 50 peticiones/día). Con `OPENROUTER_MODEL=openrouter/free` la IA no cuesta nada.
-
----
-
-## 🌍 Despliegue del MVP (gratuito)
-
-- **Frontend → Vercel o Netlify:** build `pnpm build` (salida `dist`). Variable `VITE_API_URL` con la URL pública del backend.
-- **Backend → Render (plan Free):** build `./mvnw package` y arranque `java -jar target/backend-0.0.1-SNAPSHOT.jar`. Variables: `OPENROUTER_API_KEY`, `CORS_ALLOWED_ORIGINS` (URL del frontend desplegado) y `OPENROUTER_REFERER` (URL del frontend desplegado).
-
----
-
-## 🧪 Tests
-
-```bash
-cd applyflow-backend
-./mvnw test
-```
+Aplicación creada por **corDEVro** → [cordevro.com](https://cordevro.com)
