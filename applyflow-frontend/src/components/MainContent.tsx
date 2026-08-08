@@ -14,6 +14,7 @@ import {
 import { Summary } from "./Summary/Summary";
 import { OffersManager } from "./Offers/OffersManager";
 import { CVManager } from "./CVManager";
+import { HowItWorks } from "./HowItWorks";
 
 interface MainContentProps {
   activeButton: string;
@@ -54,28 +55,42 @@ export function MainContent({ activeButton, onOpenCvSetup }: MainContentProps) {
 
   return (
     <main className="flex-1 p-6 max-w-7xl w-full mx-auto space-y-6">
-      {activeButton === "Resumen de Ofertas" && (
-        <div className="card-premium p-6 animate-fade-in">
-          <Summary data={applications} onStatusChange={handleStatusChange} />
-        </div>
-      )}
+      <div
+        className={`card-premium p-6 animate-fade-in ${
+          activeButton === "Resumen de Ofertas" ? "" : "hidden"
+        }`}
+      >
+        <Summary data={applications} onStatusChange={handleStatusChange} />
+      </div>
 
-      {activeButton === "Centro de Control" && (
-        <div className="card-premium p-6 animate-fade-in">
-          <OffersManager
-            data={applications}
-            onAdd={handleAddApplication}
-            onExport={exportData}
-            onImport={handleImport}
-          />
-        </div>
-      )}
+      <div
+        className={`card-premium p-6 animate-fade-in ${
+          activeButton === "Centro de Control" ? "" : "hidden"
+        }`}
+      >
+        <OffersManager
+          data={applications}
+          onAdd={handleAddApplication}
+          onExport={exportData}
+          onImport={handleImport}
+        />
+      </div>
 
-      {activeButton === "Curriculum Vitae" && (
-        <div className="card-premium p-6 animate-fade-in">
-          <CVManager onOpenCvSetup={onOpenCvSetup} />
-        </div>
-      )}
+      <div
+        className={`card-premium p-6 animate-fade-in ${
+          activeButton === "Curriculum Vitae" ? "" : "hidden"
+        }`}
+      >
+        <CVManager onOpenCvSetup={onOpenCvSetup} />
+      </div>
+
+      <div
+        className={`card-premium p-6 animate-fade-in ${
+          activeButton === "Cómo funciona" ? "" : "hidden"
+        }`}
+      >
+        <HowItWorks />
+      </div>
     </main>
   );
 }

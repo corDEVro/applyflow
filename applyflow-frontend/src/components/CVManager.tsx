@@ -186,7 +186,8 @@ export const CVManager = ({ onOpenCvSetup }: CVManagerProps) => {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-10 mt-6">
+      {(cargando || analisis || cartaPresentacion || cvAdaptado) && (
+        <div className="flex flex-col lg:flex-row gap-10 mt-6">
         <aside className="lg:w-4/12">
           <div className="sticky top-8 space-y-4">
             <h3 className="text-sm font-bold text-apply-primary uppercase tracking-widest">
@@ -283,7 +284,8 @@ export const CVManager = ({ onOpenCvSetup }: CVManagerProps) => {
             </div>
           )}
         </main>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

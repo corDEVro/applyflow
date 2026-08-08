@@ -43,16 +43,16 @@ export const Summary: React.FC<SummaryProps> = ({ data, onStatusChange }) => {
                 <th className="px-6 py-4 font-semibold text-apply-primary">
                   Puesto / Stack
                 </th>
-                <th className="px-6 py-4 font-semibold text-apply-primary">
+                <th className="hidden md:table-cell px-6 py-4 font-semibold text-apply-primary">
                   Plataforma
                 </th>
-                <th className="px-6 py-4 font-semibold text-apply-primary">
+                <th className="hidden md:table-cell px-6 py-4 font-semibold text-apply-primary">
                   Salario
                 </th>
-                <th className="px-6 py-4 font-semibold text-apply-primary">
+                <th className="hidden md:table-cell px-6 py-4 font-semibold text-apply-primary">
                   Estado
                 </th>
-                <th className="px-6 py-4 font-semibold text-apply-primary text-center">
+                <th className="hidden md:table-cell px-6 py-4 font-semibold text-apply-primary text-center">
                   Acción
                 </th>
               </tr>
@@ -81,16 +81,16 @@ export const Summary: React.FC<SummaryProps> = ({ data, onStatusChange }) => {
                         {app.job_title}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 hidden md:table-cell text-sm text-gray-600">
                       {app.platform_name || "Otros"}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 hidden md:table-cell text-sm text-gray-600">
                       {app.salary_range && app.salary_range !== "---"
                         ? `${app.salary_range}€`
                         : "Sin Especificar"}
                     </td>
 
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 hidden md:table-cell">
                       <select
                         value={app.status}
                         onChange={(e) =>
@@ -126,7 +126,7 @@ export const Summary: React.FC<SummaryProps> = ({ data, onStatusChange }) => {
                       </select>
                     </td>
 
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-6 py-4 hidden md:table-cell text-center">
                       <a
                         href={
                           app.url

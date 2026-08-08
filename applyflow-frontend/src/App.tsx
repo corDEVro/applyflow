@@ -33,14 +33,14 @@ export default function App() {
             href="https://cordevro.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 opacity-90 hover:opacity-100 transition-opacity"
+            title="corDEVro"
+            className="flex items-center justify-center bg-[#a8dadc] rounded-full p-2.5 opacity-95 hover:opacity-100 hover:scale-105 transition-all shadow-md"
           >
             <img
               src="/cordevro_logo.png"
               alt="corDEVro"
-              className="h-8 w-auto"
+              className="h-7 w-auto"
             />
-            <span className="text-sm font-semibold">Hecho por corDEVro</span>
           </a>
           <p className="text-xs text-white/70">
             © 2026 corDEVro · Todos los derechos reservados
