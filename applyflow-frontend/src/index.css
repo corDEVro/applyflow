@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@theme {
+  --color-apply-primary: #006d77;
+  --color-apply-secondary: #83c5be;
+  --color-apply-bg: #edf6f9;
+  --color-apply-accent: #ffddd2;
+  --color-apply-terracotta: #e29578;
+}
