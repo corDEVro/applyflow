@@ -1,13 +1,16 @@
 // Componente para gestionar las ofertas de empleo, mostrando las candidaturas
 // existentes y permitiendo añadir nuevas sin recargar la página.
+// Los datos viven en localStorage (capa storage.ts), sin backend de datos.
+// Incluye botones de Exportar/Importar para hacer copias de seguridad JSON.
 
 import React, { useRef, useState } from "react";
 import { type ApplicationWithPlatform } from "../../types";
-import { API_URL } from "../../config";
 
 interface OffersManagerProps {
   data: ApplicationWithPlatform[];
   onAdd: (application: ApplicationWithPlatform) => void;
+  onExport: () => string;
+  onImport: (json: string) => string | null;
 }
 
 const detectPlatformFromUrl = (url: string): string => {
@@ -23,58 +26,70 @@ const detectPlatformFromUrl = (url: string): string => {
   return "Otros";
 };
 
-export const OffersManager: React.FC<OffersManagerProps> = ({ data, onAdd }) => {
+export const OffersManager: React.FC<OffersManagerProps> = ({
+  data,
+  onAdd,
+  onExport,
+  onImport,
+}) => {
   const formRef = useRef<HTMLFormElement>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const showMessage = (message: string, duracionMs = 3000) => {
+    setSuccessMsg(message);
+    setTimeout(() => setSuccessMsg(null), duracionMs);
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const urlInput = formData.get("url") as string;
+    const urlInput = (formData.get("url") as string) || "";
 
-    const applicationData = {
-      jobTitle: formData.get("jobTitle") as string,
+    const applicationData: ApplicationWithPlatform = {
+      id: Date.now(),
+      job_title: formData.get("jobTitle") as string,
       company: formData.get("company") as string,
-      salaryRange: formData.get("salary") as string,
-      applicationUrl: urlInput,
+      salary_range: (formData.get("salary") as string) || undefined,
       status: "Inscrito",
-      platformName: detectPlatformFromUrl(urlInput),
+      platform_name: detectPlatformFromUrl(urlInput),
+      url: urlInput || undefined,
+      date: new Date().toISOString(),
     };
 
+    onAdd(applicationData);
+    formRef.current?.reset();
+    showMessage("¡Candidatura guardada!");
+  };
+
+  const handleExportar = () => {
+    const json = onExport();
+    const blob = new Blob([json], { type: "application/json" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "applyflow-datos.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+    showMessage("Respaldo descargado. Guárdalo en un sitio seguro.");
+  };
+
+  const handleImportar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
     try {
-      setSaving(true);
-      const response = await fetch(`${API_URL}/api/applications`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(applicationData),
-      });
-
-      if (!response.ok) {
-        throw new Error("El servidor rechazó la candidatura.");
+      const texto = await file.text();
+      const error = onImport(texto);
+      if (error) {
+        showMessage(error, 5000);
+      } else {
+        showMessage("Datos importados correctamente.");
       }
-
-      const created = await response.json();
-      onAdd({
-        id: created.id,
-        job_title: created.jobTitle,
-        company: created.company,
-        platform_name: created.platformName || "Otros",
-        salary_range: created.salaryRange || undefined,
-        status: created.status,
-        url: created.applicationUrl,
-        date: created.date,
-      });
-
-      formRef.current?.reset();
-      setSuccessMsg("¡Candidatura guardada con éxito!");
-      setTimeout(() => setSuccessMsg(null), 3000);
-    } catch (error) {
-      console.error("Error de red:", error);
+    } catch {
+      showMessage("No se pudo leer el fichero.", 5000);
     } finally {
-      setSaving(false);
+      event.target.value = "";
     }
   };
 
@@ -96,10 +111,27 @@ export const OffersManager: React.FC<OffersManagerProps> = ({ data, onAdd }) => 
 
         <div className="flex flex-col lg:flex-row gap-12">
           <div className="lg:w-7/12 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
               <h2 className="text-xl font-bold text-apply-primary">
                 Mis Candidaturas
               </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExportar}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-apply-secondary text-apply-primary hover:bg-apply-bg/30 font-semibold transition-colors"
+                >
+                  Exportar datos
+                </button>
+                <label className="text-xs px-3 py-1.5 rounded-lg border border-apply-secondary text-apply-primary hover:bg-apply-bg/30 font-semibold cursor-pointer transition-colors">
+                  Importar datos
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={handleImportar}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
@@ -194,10 +226,9 @@ export const OffersManager: React.FC<OffersManagerProps> = ({ data, onAdd }) => 
 
                 <button
                   type="submit"
-                  disabled={saving}
-                  className="w-full bg-apply-primary text-white font-bold py-3 rounded-xl hover:bg-apply-secondary transition-colors disabled:opacity-50"
+                  className="w-full bg-apply-primary text-white font-bold py-3 rounded-xl hover:bg-apply-secondary transition-colors"
                 >
-                  {saving ? "Guardando..." : "Guardar Candidatura"}
+                  Guardar Candidatura
                 </button>
               </form>
             </div>

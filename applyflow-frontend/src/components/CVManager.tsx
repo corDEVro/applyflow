@@ -1,10 +1,19 @@
-// Este componente se encarga de gestionar el proceso completo de adaptación del CV y la carta de presentación, así como el envío directo de la candidatura por correo electrónico. Integra las funcionalidades de análisis de la oferta, generación de textos con IA, descarga en PDF y envío de correos, proporcionando una experiencia fluida y centralizada para el usuario.
+// Este componente gestiona el proceso completo de adaptación del CV y la carta
+// de presentación con IA. El CV base se envía desde el navegador (localStorage).
+// El "envío" de la candidatura se hace con mailto: se abre el correo del usuario
+// con la carta preparada y él adjunta el PDF, sin backend de correos.
+
 import React, { useState, useEffect } from "react";
 import { CVOptimizer } from "./CV/CVOptimizer";
 import { CoverLetter } from "./CV/CoverLetter";
 import { API_URL } from "../config";
+import { getCvBase } from "../storage";
 
-export const CVManager = () => {
+interface CVManagerProps {
+  onOpenCvSetup?: () => void;
+}
+
+export const CVManager = ({ onOpenCvSetup }: CVManagerProps) => {
   const [analisis, setAnalisis] = useState(
     () => localStorage.getItem("af_analisis") || "",
   );
@@ -19,7 +28,6 @@ export const CVManager = () => {
   );
 
   const [cargando, setCargando] = useState(false);
-  const [enviandoEmail, setEnviandoEmail] = useState(false);
   const [descargandoPdf, setDescargandoPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exitoMsg, setExitoMsg] = useState<string | null>(null);
@@ -40,11 +48,11 @@ export const CVManager = () => {
       const response = await fetch(`${API_URL}/api/ai/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, descripcion }),
+        body: JSON.stringify({ url, descripcion, cvBase: getCvBase() }),
       });
 
       if (!response.ok) {
-        throw new Error("El servidor de Java ha fallado al procesar la IA.");
+        throw new Error("El servidor ha fallado al procesar la IA.");
       }
 
       const data = await response.json();
@@ -70,14 +78,11 @@ export const CVManager = () => {
     if (!cvAdaptado) return;
     try {
       setDescargandoPdf(true);
-      const response = await fetch(
-        `${API_URL}/api/cv/generate-pdf`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contenidoCv: cvAdaptado }),
-        },
-      );
+      const response = await fetch(`${API_URL}/api/cv/generate-pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contenidoCv: cvAdaptado }),
+      });
 
       if (!response.ok) throw new Error("Error al generar el PDF.");
 
@@ -91,48 +96,37 @@ export const CVManager = () => {
       a.remove();
     } catch (err) {
       console.error("Error al generar PDF:", err);
-      setError(
-        "Fallo al generar el PDF. Revisa la configuración en el servidor Java.",
-      );
+      setError("Fallo al generar el PDF. Comprueba la conexión con el servidor.");
     } finally {
       setDescargandoPdf(false);
     }
   };
 
-  const handleEnviarCandidatura = async (e: React.FormEvent) => {
+  const handleEnviarCandidatura = (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailEmpresa) {
       setError("Por favor, introduce un correo electrónico válido.");
       return;
     }
-    try {
-      setEnviandoEmail(true);
-      setError(null);
-      setExitoMsg(null);
+    setError(null);
+    setExitoMsg(null);
 
-      const response = await fetch(`${API_URL}/api/cv/send-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          destinatario: emailEmpresa,
-          cuerpoEmail: cartaPresentacion,
-          contenidoCv: cvAdaptado,
-        }),
-      });
+    const asunto = encodeURIComponent(
+      "Candidatura para el puesto - Currículum y Carta de Presentación",
+    );
+    const cuerpo = encodeURIComponent(cartaPresentacion);
+    const mailtoUrl = `mailto:${emailEmpresa}?subject=${asunto}&body=${cuerpo}`;
 
-      if (!response.ok) throw new Error("Error en el servidor de correos.");
+    const link = document.createElement("a");
+    link.href = mailtoUrl;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 
-      setExitoMsg(
-        "¡Candidatura enviada con éxito! El correo electrónico y el PDF se han despachado correctamente.",
-      );
-    } catch (err) {
-      console.error("Error al enviar el correo:", err);
-      setError(
-        "Fallo al enviar el correo. Revisa la configuración de correo en Java.",
-      );
-    } finally {
-      setEnviandoEmail(false);
-    }
+    setExitoMsg(
+      "Se ha abierto tu programa de correo con la carta preparada. Adjunta el PDF descargado y envíalo.",
+    );
+    setTimeout(() => setExitoMsg(null), 6000);
   };
 
   return (
@@ -143,6 +137,22 @@ export const CVManager = () => {
       <p className="text-center text-apply-secondary mb-6">
         Adapta tu perfil profesional y genera textos persuasivos usando IA.
       </p>
+
+      {!getCvBase() && (
+        <div className="my-4 p-3 bg-amber-100 text-amber-800 rounded-xl text-sm flex flex-wrap justify-between items-center gap-3">
+          <span>
+            Tu CV base aún no está configurado: la IA usará un perfil genérico.
+          </span>
+          {onOpenCvSetup && (
+            <button
+              onClick={onOpenCvSetup}
+              className="px-3 py-1 bg-apply-primary text-white rounded-lg text-xs font-bold hover:bg-apply-secondary transition-colors"
+            >
+              Configurar CV base
+            </button>
+          )}
+        </div>
+      )}
 
       <CVOptimizer onGenerar={handleGenerarIA} cargando={cargando} />
 
@@ -227,11 +237,11 @@ export const CVManager = () => {
           {(cartaPresentacion || cvAdaptado) && (
             <div className="bg-apply-bg bg-opacity-30 p-6 rounded-2xl border border-apply-bg">
               <h3 className="text-sm font-bold text-apply-primary uppercase tracking-widest mb-3">
-                3. Envío Directo de Candidatura
+                3. Envío de Candidatura
               </h3>
               <p className="text-xs text-apply-secondary mb-4">
-                La carta de presentación se colocará en el cuerpo del correo y
-                el Currículum se adjuntará automáticamente en formato PDF.
+                Se abrirá tu programa de correo con la carta en el cuerpo del
+                mensaje. Descarga antes el PDF y adjúntalo tú manualmente.
               </p>
               <form
                 onSubmit={handleEnviarCandidatura}
@@ -247,10 +257,9 @@ export const CVManager = () => {
                 />
                 <button
                   type="submit"
-                  disabled={enviandoEmail}
-                  className="px-6 py-2 text-sm font-bold bg-apply-primary text-white rounded-xl hover:bg-apply-secondary transition shadow-sm disabled:opacity-50"
+                  className="px-6 py-2 text-sm font-bold bg-apply-primary text-white rounded-xl hover:bg-apply-secondary transition shadow-sm"
                 >
-                  {enviandoEmail ? "Enviando Correo..." : "Enviar Candidatura"}
+                  Abrir Correo con Candidatura
                 </button>
               </form>
             </div>
