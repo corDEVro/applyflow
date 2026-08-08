@@ -1,16 +1,22 @@
 # ApplyFlow 🚀
 
-ApplyFlow es un ecosistema inteligente de gestión de candidaturas y optimización de perfiles profesionales. La aplicación permite centralizar ofertas de empleo de los principales portales de España, automatizar el seguimiento de estados de forma interactiva y adaptar currículums y cartas de presentación mediante Inteligencia Artificial (OpenRouter) en función de los requisitos de cada oferta de trabajo.
+ApplyFlow es un ecosistema inteligente de gestión de candidaturas y optimización de perfiles profesionales. Centraliza ofertas de empleo, automatiza el seguimiento de estados y adapta currículums y cartas de presentación mediante IA (OpenRouter) según los requisitos de cada oferta.
+
+**MVP sin base de datos:** los datos de cada usuario viven **solo en su navegador** (`localStorage`). Esto hace el despliegue 100% gratuito y aísla automáticamente a cada persona que use la app.
 
 ---
 
-## 🛠️ Arquitectura del Sistema
+## 🛠️ Arquitectura
 
-El proyecto está dividido en dos capas principales que deben ejecutarse en paralelo:
+Dos capas que se ejecutan en paralelo:
 
-- **Frontend (React + TypeScript):** Interfaz SPA optimizada con Tailwind CSS, persistencia local para flujos de trabajo e interactividad en tiempo real sin recargas de página.
-- **Backend (Spring Boot + Java):** API REST encargada de la persistencia en base de datos, conversión de documentos a PDF de alta fidelidad, despacho automático de correos electrónicos y orquestación del servicio de IA.
-- **Base de Datos (PostgreSQL):** Almacenamiento relacional para persistir el histórico de todas las candidaturas.
+- **Frontend (React + TypeScript + Vite + Tailwind):** interfaz SPA. Persiste candidaturas y CV base en `localStorage` a través de la capa de datos única `src/storage.ts` (migrable a una BD futura). Incluye copias de seguridad **Exportar/Importar** en JSON.
+- **Backend (Spring Boot + Java):** API REST mínima sin estado que solo se encarga de tres cosas:
+  1. **IA**: `/api/ai/generate` (analiza la oferta y adapta CV + carta + email vía OpenRouter).
+  2. **PDF**: `/api/cv/generate-pdf` (genera el CV adaptado en PDF con OpenPDF).
+  3. **Extracción**: `/api/cv/extract-text` (convierte un `.docx` en texto para usarlo como CV base).
+
+No hay PostgreSQL, ni JPA, ni SMTP. El "envío" de candidaturas se hace con **`mailto:`**: se abre el correo del usuario con la carta preparada y él adjunta el PDF.
 
 ---
 
@@ -18,29 +24,22 @@ El proyecto está dividido en dos capas principales que deben ejecutarse en para
 
 - **Java 21+** (JDK)
 - **Node.js 20+** y **pnpm**
-- **PostgreSQL** (o un contenedor con la imagen `postgres`)
 - Una cuenta en **[OpenRouter](https://openrouter.ai)** para obtener una API key
 
 ---
 
-## 🚀 Puesta en marcha
+## 🚀 Puesta en marcha (desarrollo)
 
-### 1. Base de datos
-
-Crea una base de datos PostgreSQL llamada `applyflow` (o la que definas en `DB_NAME`).
-
-### 2. Backend (`applyflow-backend`)
+### 1. Backend (`applyflow-backend`)
 
 ```bash
 cd applyflow-backend
-./mvnw spring-boot:run
+OPENROUTER_API_KEY=tu_clave ./mvnw spring-boot:run
 ```
 
-Define las variables de entorno que necesites (ver tabla inferior). Sin `OPENROUTER_API_KEY`, el módulo de IA devolverá un error controlado; el resto de la aplicación funciona igual.
+Sin `OPENROUTER_API_KEY`, la IA devolverá un error controlado; PDF y extracción siguen funcionando.
 
-> **Nota:** si tu PostgreSQL usa usuario/contraseña no vacíos, exporta `DB_USER` y `DB_PASSWORD` antes de arrancar.
-
-### 3. Frontend (`applyflow-frontend`)
+### 2. Frontend (`applyflow-frontend`)
 
 ```bash
 cd applyflow-frontend
@@ -49,7 +48,7 @@ pnpm install
 pnpm dev
 ```
 
-Abre `http://localhost:5173`.
+Abre `http://localhost:5173`. La primera vez te pedirá tu CV base (pegarlo o subir tu `.docx`); se guarda solo en tu navegador.
 
 ---
 
@@ -59,18 +58,7 @@ Abre `http://localhost:5173`.
 
 | Variable | Descripción | Valor por defecto |
 |---|---|---|
-| `DB_HOST` | Host de PostgreSQL | `localhost` |
-| `DB_PORT` | Puerto de PostgreSQL | `5432` |
-| `DB_NAME` | Nombre de la base de datos | `applyflow` |
-| `DB_USER` | Usuario de PostgreSQL | `postgres` |
-| `DB_PASSWORD` | Contraseña de PostgreSQL | *(vacía)* |
-| `JPA_DDL_AUTO` | Estrategia de esquema (`update` solo en desarrollo; `validate` en producción) | `update` |
-| `JPA_SHOW_SQL` | Mostrar SQL en consola | `false` |
 | `OPENROUTER_API_KEY` | Clave de la API de OpenRouter | *(vacía)* |
-| `SMTP_HOST` | Servidor SMTP saliente | *(vacío)* |
-| `SMTP_PORT` | Puerto SMTP | `587` |
-| `SMTP_USER` | Usuario SMTP | *(vacío)* |
-| `SMTP_PASSWORD` | Contraseña SMTP | *(vacío)* |
 | `CORS_ALLOWED_ORIGINS` | Orígenes permitidos para el frontend (separados por comas) | `http://localhost:5173` |
 | `OPENROUTER_REFERER` | URL pública reportada a OpenRouter | `http://localhost:8080` |
 
@@ -82,12 +70,22 @@ Abre `http://localhost:5173`.
 
 ---
 
-## 📄 Archivos que debes personalizar
+## 🔒 Datos y privacidad
 
-El repositorio no incluye datos personales. Antes de usarlo, sustituye por tu propia información:
+- El repositorio **no contiene datos personales**.
+- Tu CV base y tus candidaturas se guardan **exclusivamente en tu navegador** (localStorage): no viajan a ningún servidor de datos.
+- Al estar ligados al navegador, usa siempre el mismo dispositivo/navegador, y usa **Exportar/Importar** para hacer copias de seguridad o moverte de dispositivo.
+- Si borras los datos de navegación, perderás tus candidaturas (por eso exporta de vez en cuando).
 
-- **`applyflow-backend/src/main/resources/templates/cv_base.docx`** → tu currículum base. Es la plantilla de conocimiento que usa la IA para adaptar el CV.
-- **`applyflow-frontend/public/mi-cv.pdf`** → el PDF que se descarga con el botón "Mi CV" del header.
+---
+
+## 🌍 Despliegue gratuito
+
+- **Frontend → Vercel o Netlify:** build `pnpm build` (output `dist`). Variable `VITE_API_URL` apuntando a la URL pública del backend.
+- **Backend → Render (plan Free) o similar:** build `./mvnw package` y arranque `java -jar target/backend-0.0.1-SNAPSHOT.jar`. Variables:
+  - `OPENROUTER_API_KEY` (tu clave personal)
+  - `CORS_ALLOWED_ORIGINS` (URL del frontend desplegado)
+  - `OPENROUTER_REFERER` (URL del frontend desplegado)
 
 ---
 
@@ -98,4 +96,10 @@ cd applyflow-backend
 ./mvnw test
 ```
 
-Los tests usan una base de datos H2 en memoria, por lo que no necesitan PostgreSQL.
+Incluyen un test real de generación de PDF (no necesitan base de datos ni red).
+
+---
+
+## 📈 Métricas de usuarios
+
+Este MVP no tiene base de datos, así que no puede contar usuarios de forma precisa. Cuando exista la versión con BD y login, el registro de usuarios dará la métrica real. Si quieres una cifra aproximada mientras tanto, puedes añadir un endpoint `/api/analytics/visit` que escriba en los logs de Render (cuenta aproximada de visitas, no de usuarios únicos).
