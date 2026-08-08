@@ -7,7 +7,12 @@ import React, { useState, useEffect } from "react";
 import { CVOptimizer } from "./CV/CVOptimizer";
 import { CoverLetter } from "./CV/CoverLetter";
 import { API_URL } from "../config";
-import { getCvBase } from "../storage";
+import {
+  consumirAnalisisIA,
+  getCvBase,
+  limiteDiario,
+  quedanAnalisisIA,
+} from "../storage";
 
 interface CVManagerProps {
   onOpenCvSetup?: () => void;
@@ -31,6 +36,7 @@ export const CVManager = ({ onOpenCvSetup }: CVManagerProps) => {
   const [descargandoPdf, setDescargandoPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exitoMsg, setExitoMsg] = useState<string | null>(null);
+  const [quedan, setQuedan] = useState(() => quedanAnalisisIA());
 
   useEffect(() => {
     localStorage.setItem("af_analisis", analisis);
@@ -40,6 +46,14 @@ export const CVManager = ({ onOpenCvSetup }: CVManagerProps) => {
   }, [analisis, cartaPresentacion, cvAdaptado, emailEmpresa]);
 
   const handleGenerarIA = async (url: string, descripcion: string) => {
+    if (!consumirAnalisisIA()) {
+      setError(
+        `Te has quedado sin análisis gratuitos hoy (${limiteDiario()} por día). Vuelve mañana o escribe a corDEVro para el modo premium.`,
+      );
+      return;
+    }
+    setQuedan(quedanAnalisisIA());
+
     try {
       setCargando(true);
       setError(null);
@@ -136,6 +150,10 @@ export const CVManager = ({ onOpenCvSetup }: CVManagerProps) => {
       </h2>
       <p className="text-center text-apply-secondary mb-6">
         Adapta tu perfil profesional y genera textos persuasivos usando IA.
+      </p>
+
+      <p className="text-center text-xs font-semibold text-apply-primary mb-4">
+        Análisis gratuitos hoy: {quedan} / {limiteDiario()}
       </p>
 
       {!getCvBase() && (

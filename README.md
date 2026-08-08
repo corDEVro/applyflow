@@ -4,6 +4,8 @@ ApplyFlow es una app de gestión de candidaturas y optimización de perfiles pro
 
 **MVP sin base de datos:** los datos de cada usuario viven solo en su navegador (`localStorage`), con copias de seguridad Exportar/Importar en JSON.
 
+**Límite gratuito:** cada usuario tiene **5 análisis de IA al día** (contador en su navegador), lo que permite hasta ~10 usuarios con el plan gratis de OpenRouter. La opción premium (API key propia del usuario) llegará en una versión futura.
+
 ---
 
 ## 🛠️ Arquitectura

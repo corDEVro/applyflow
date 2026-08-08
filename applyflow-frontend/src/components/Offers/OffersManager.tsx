@@ -9,6 +9,11 @@
 import React, { useRef, useState } from "react";
 import { type ApplicationWithPlatform } from "../../types";
 import { API_URL } from "../../config";
+import {
+  consumirAnalisisIA,
+  limiteDiario,
+  quedanAnalisisIA,
+} from "../../storage";
 
 interface OffersManagerProps {
   data: ApplicationWithPlatform[];
@@ -51,6 +56,7 @@ export const OffersManager: React.FC<OffersManagerProps> = ({
   const [datos, setDatos] = useState<DatosOferta | null>(null);
   const [extractError, setExtractError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [quedan, setQuedan] = useState(() => quedanAnalisisIA());
 
   const showMessage = (message: string, duracionMs = 3000) => {
     setSuccessMsg(message);
@@ -82,6 +88,16 @@ export const OffersManager: React.FC<OffersManagerProps> = ({
     setExtrayendo(true);
     setExtractError(null);
     setDatos(null);
+
+    if (!consumirAnalisisIA()) {
+      setExtrayendo(false);
+      setExtractError(
+        `Te has quedado sin extracciones gratuitas hoy (${limiteDiario()} por día). Vuelve mañana.`,
+      );
+      setQuedan(0);
+      return;
+    }
+    setQuedan(quedanAnalisisIA());
 
     try {
       const response = await fetch(`${API_URL}/api/offer/extract`, {
@@ -250,8 +266,17 @@ export const OffersManager: React.FC<OffersManagerProps> = ({
               </h3>
               <p className="text-xs text-apply-secondary mb-6">
                 Pega la URL de la oferta y ApplyFlow extraerá los datos
-                automáticamente.
+                automáticamente. Extracciones gratuitas hoy:{" "}
+                <span className="font-bold text-apply-primary">
+                  {quedan} / {limiteDiario()}
+                </span>
               </p>
+
+              {!datos && extractError && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-xs text-center">
+                  {extractError}
+                </div>
+              )}
 
               {!datos && (
                 <form ref={formRef} onSubmit={handleExtract} className="space-y-4">

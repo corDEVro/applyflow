@@ -8,6 +8,46 @@ import type { ApplicationWithPlatform } from "./types";
 const KEY_APPS = "af_applications";
 const KEY_CV_BASE = "af_cv_base";
 const KEY_CV_SKIPPED = "af_cv_skipped";
+const KEY_USO = "af_uso_diario";
+
+const LIMITE_IA_DIARIO = 5;
+
+export function limiteDiario(): number {
+  return LIMITE_IA_DIARIO;
+}
+
+function fechaLocalHoy(): string {
+  return new Date().toLocaleDateString("sv-SE");
+}
+
+export function quedanAnalisisIA(): number {
+  try {
+    const raw = localStorage.getItem(KEY_USO);
+    if (!raw) return LIMITE_IA_DIARIO;
+    const { fecha, usos } = JSON.parse(raw);
+    if (fecha !== fechaLocalHoy()) return LIMITE_IA_DIARIO;
+    return Math.max(0, LIMITE_IA_DIARIO - usos);
+  } catch {
+    return LIMITE_IA_DIARIO;
+  }
+}
+
+export function consumirAnalisisIA(): boolean {
+  if (quedanAnalisisIA() <= 0) return false;
+  try {
+    const raw = localStorage.getItem(KEY_USO);
+    const prev = raw ? JSON.parse(raw) : { fecha: "", usos: 0 };
+    const hoy = fechaLocalHoy();
+    const esHoy = prev.fecha === hoy;
+    localStorage.setItem(
+      KEY_USO,
+      JSON.stringify({ fecha: hoy, usos: (esHoy ? prev.usos : 0) + 1 }),
+    );
+  } catch {
+    // Si localStorage falla, permitimos la llamada igualmente.
+  }
+  return true;
+}
 
 export function getApplications(): ApplicationWithPlatform[] {
   try {
