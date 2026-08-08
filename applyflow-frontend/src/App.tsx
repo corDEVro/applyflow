@@ -27,20 +27,25 @@ export default function App() {
         onOpenCvSetup={() => setShowOnboarding(true)}
       />
 
-      <footer className="py-6 px-6 flex items-center justify-center">
-        <a
-          href="https://cordevro.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
-        >
-          <img
-            src="/cordevro_logo.png"
-            alt="corDEVro"
-            className="h-8 w-auto"
-          />
-          <span className="text-sm font-medium">Hecho por corDEVro</span>
-        </a>
+      <footer className="mt-auto py-8 px-6 bg-apply-primary text-white">
+        <div className="flex flex-col items-center gap-3">
+          <a
+            href="https://cordevro.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 opacity-90 hover:opacity-100 transition-opacity"
+          >
+            <img
+              src="/cordevro_logo.png"
+              alt="corDEVro"
+              className="h-8 w-auto"
+            />
+            <span className="text-sm font-semibold">Hecho por corDEVro</span>
+          </a>
+          <p className="text-xs text-white/70">
+            © 2026 corDEVro · Todos los derechos reservados
+          </p>
+        </div>
       </footer>
     </div>
   );
