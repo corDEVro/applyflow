@@ -1,16 +1,29 @@
-// Componente para gestionar las ofertas de empleo, mostrando las candidaturas
-// existentes y permitiendo añadir nuevas sin recargar la página.
+// Componente para gestionar las ofertas de empleo. Añadir una oferta es tan
+// fácil como pegar su URL: el backend descarga la página y la IA extrae
+// título, empresa, salario, plataforma y email. Si la extracción falla (hay
+// portales que bloquean a los bots), se muestra un pequeño formulario de
+// respaldo para completar los datos a mano.
 // Los datos viven en localStorage (capa storage.ts), sin backend de datos.
-// Incluye botones de Exportar/Importar para hacer copias de seguridad JSON.
+// Incluye Exportar/Importar para copias de seguridad JSON.
 
 import React, { useRef, useState } from "react";
 import { type ApplicationWithPlatform } from "../../types";
+import { API_URL } from "../../config";
 
 interface OffersManagerProps {
   data: ApplicationWithPlatform[];
   onAdd: (application: ApplicationWithPlatform) => void;
   onExport: () => string;
   onImport: (json: string) => string | null;
+}
+
+interface DatosOferta {
+  url: string;
+  titulo?: string;
+  empresa?: string;
+  salario?: string;
+  plataforma?: string;
+  email?: string;
 }
 
 const detectPlatformFromUrl = (url: string): string => {
@@ -33,6 +46,10 @@ export const OffersManager: React.FC<OffersManagerProps> = ({
   onImport,
 }) => {
   const formRef = useRef<HTMLFormElement>(null);
+  const [url, setUrl] = useState("");
+  const [extrayendo, setExtrayendo] = useState(false);
+  const [datos, setDatos] = useState<DatosOferta | null>(null);
+  const [extractError, setExtractError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const showMessage = (message: string, duracionMs = 3000) => {
@@ -40,23 +57,83 @@ export const OffersManager: React.FC<OffersManagerProps> = ({
     setTimeout(() => setSuccessMsg(null), duracionMs);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const urlInput = (formData.get("url") as string) || "";
-
-    const applicationData: ApplicationWithPlatform = {
+  const crearCandidatura = (datosOferta: DatosOferta): ApplicationWithPlatform => {
+    const plataforma =
+      (datosOferta.plataforma && datosOferta.plataforma.trim()
+        ? datosOferta.plataforma
+        : detectPlatformFromUrl(datosOferta.url)) || "Otros";
+    return {
       id: Date.now(),
-      job_title: formData.get("jobTitle") as string,
-      company: formData.get("company") as string,
-      salary_range: (formData.get("salary") as string) || undefined,
+      job_title: datosOferta.titulo?.trim() || "",
+      company: datosOferta.empresa?.trim() || "",
+      salary_range: datosOferta.salario?.trim() || undefined,
       status: "Inscrito",
-      platform_name: detectPlatformFromUrl(urlInput),
-      url: urlInput || undefined,
+      platform_name: plataforma,
+      url: datosOferta.url || undefined,
       date: new Date().toISOString(),
     };
+  };
 
-    onAdd(applicationData);
+  const handleExtract = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const urlLimpia = url.trim();
+    if (!urlLimpia) return;
+
+    setExtrayendo(true);
+    setExtractError(null);
+    setDatos(null);
+
+    try {
+      const response = await fetch(`${API_URL}/api/offer/extract`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: urlLimpia }),
+      });
+      const resultado = await response.json();
+
+      if (
+        resultado.error ||
+        (!resultado.titulo && !resultado.empresa && !resultado.salario)
+      ) {
+        setDatos({ url: urlLimpia });
+        setExtractError(
+          resultado.error ||
+            "No se pudieron extraer los datos automáticamente.",
+        );
+      } else {
+        onAdd(crearCandidatura({ url: urlLimpia, ...resultado }));
+        setUrl("");
+        formRef.current?.reset();
+        showMessage("¡Candidatura guardada! Datos extraídos de la oferta.");
+      }
+    } catch {
+      setDatos({ url: urlLimpia });
+      setExtractError(
+        "No se pudo conectar con el servidor. Completa los datos manualmente.",
+      );
+    } finally {
+      setExtrayendo(false);
+    }
+  };
+
+  const handleGuardarManual = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!datos) return;
+    const formData = new FormData(event.currentTarget);
+
+    onAdd(
+      crearCandidatura({
+        url: datos.url,
+        titulo: (formData.get("titulo") as string) || datos.titulo || "",
+        empresa: (formData.get("empresa") as string) || datos.empresa || "",
+        salario: (formData.get("salario") as string) || datos.salario || "",
+        plataforma: datos.plataforma,
+      }),
+    );
+
+    setDatos(null);
+    setExtractError(null);
+    setUrl("");
     formRef.current?.reset();
     showMessage("¡Candidatura guardada!");
   };
@@ -64,14 +141,14 @@ export const OffersManager: React.FC<OffersManagerProps> = ({
   const handleExportar = () => {
     const json = onExport();
     const blob = new Blob([json], { type: "application/json" });
-    const url = window.URL.createObjectURL(blob);
+    const urlDescarga = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
+    a.href = urlDescarga;
     a.download = "applyflow-datos.json";
     document.body.appendChild(a);
     a.click();
     a.remove();
-    window.URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(urlDescarga);
     showMessage("Respaldo descargado. Guárdalo en un sitio seguro.");
   };
 
@@ -142,10 +219,10 @@ export const OffersManager: React.FC<OffersManagerProps> = ({
                 >
                   <div>
                     <h3 className="font-bold text-lg text-apply-primary">
-                      {app.job_title}
+                      {app.job_title || "Oferta sin título"}
                     </h3>
                     <p className="text-apply-secondary font-medium">
-                      {app.company}
+                      {app.company || "Empresa no disponible"}
                     </p>
                     <div className="flex gap-2 mt-2">
                       <span className="text-[10px] bg-apply-bg text-apply-primary px-2 py-0.5 rounded">
@@ -168,69 +245,105 @@ export const OffersManager: React.FC<OffersManagerProps> = ({
 
           <aside className="w-full lg:w-5/12">
             <div className="bg-white p-8 rounded-2xl border-2 border-apply-secondary/30 sticky top-8">
-              <h3 className="text-xl font-bold text-apply-primary mb-6">
+              <h3 className="text-xl font-bold text-apply-primary mb-2">
                 Nueva Oferta
               </h3>
+              <p className="text-xs text-apply-secondary mb-6">
+                Pega la URL de la oferta y ApplyFlow extraerá los datos
+                automáticamente.
+              </p>
 
-              <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-apply-primary uppercase mb-1">
-                    Título del puesto
-                  </label>
-                  <input
-                    name="jobTitle"
-                    type="text"
-                    placeholder="Ej: Desarrollador Frontend"
-                    required
-                    className="w-full p-2 rounded bg-apply-bg/30 border border-apply-secondary text-apply-primary"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+              {!datos && (
+                <form ref={formRef} onSubmit={handleExtract} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-apply-primary uppercase mb-1">
-                      Empresa
+                      URL de la oferta
                     </label>
                     <input
-                      name="company"
-                      type="text"
-                      placeholder="Ej: Google"
+                      name="url"
+                      type="url"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      placeholder="https://www.infojobs.net/.../"
                       required
+                      disabled={extrayendo}
                       className="w-full p-2.5 rounded bg-apply-bg/30 border border-apply-secondary text-apply-primary"
                     />
                   </div>
+
+                  <button
+                    type="submit"
+                    disabled={extrayendo || !url.trim()}
+                    className="w-full bg-apply-primary text-white font-bold py-3 rounded-xl hover:bg-apply-secondary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {extrayendo ? (
+                      <>
+                        <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                        Extrayendo datos de la oferta...
+                      </>
+                    ) : (
+                      "Guardar Oferta"
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {datos && (
+                <form onSubmit={handleGuardarManual} className="space-y-4">
+                  {extractError && (
+                    <div className="p-3 bg-amber-100 text-amber-800 rounded-xl text-xs">
+                      {extractError} Completa los campos y guarda.
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-xs font-bold text-apply-primary uppercase mb-1">
-                      Salario
+                      Título del puesto
                     </label>
                     <input
-                      name="salary"
+                      name="titulo"
                       type="text"
-                      placeholder="Ej: 45000"
-                      className="w-full p-2.5 rounded bg-apply-bg/30 border border-apply-secondary text-apply-primary"
+                      defaultValue={datos.titulo || ""}
+                      placeholder="Ej: Desarrollador Frontend"
+                      className="w-full p-2 rounded bg-apply-bg/30 border border-apply-secondary text-apply-primary"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-apply-primary uppercase mb-1">
-                    URL de la oferta
-                  </label>
-                  <input
-                    name="url"
-                    type="url"
-                    placeholder="https://example.com"
-                    className="w-full p-2.5 rounded bg-apply-bg/30 border border-apply-secondary text-apply-primary"
-                  />
-                </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-apply-primary uppercase mb-1">
+                        Empresa
+                      </label>
+                      <input
+                        name="empresa"
+                        type="text"
+                        defaultValue={datos.empresa || ""}
+                        placeholder="Ej: Google"
+                        className="w-full p-2.5 rounded bg-apply-bg/30 border border-apply-secondary text-apply-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-apply-primary uppercase mb-1">
+                        Salario
+                      </label>
+                      <input
+                        name="salario"
+                        type="text"
+                        defaultValue={datos.salario || ""}
+                        placeholder="Ej: 45000"
+                        className="w-full p-2.5 rounded bg-apply-bg/30 border border-apply-secondary text-apply-primary"
+                      />
+                    </div>
+                  </div>
 
-                <button
-                  type="submit"
-                  className="w-full bg-apply-primary text-white font-bold py-3 rounded-xl hover:bg-apply-secondary transition-colors"
-                >
-                  Guardar Candidatura
-                </button>
-              </form>
+                  <button
+                    type="submit"
+                    className="w-full bg-apply-primary text-white font-bold py-3 rounded-xl hover:bg-apply-secondary transition-colors"
+                  >
+                    Guardar Candidatura
+                  </button>
+                </form>
+              )}
             </div>
           </aside>
         </div>

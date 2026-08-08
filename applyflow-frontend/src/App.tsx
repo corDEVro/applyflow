@@ -26,6 +26,22 @@ export default function App() {
         activeButton={activeButton}
         onOpenCvSetup={() => setShowOnboarding(true)}
       />
+
+      <footer className="py-6 px-6 flex items-center justify-center">
+        <a
+          href="https://cordevro.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+        >
+          <img
+            src="/cordevro_logo.png"
+            alt="corDEVro"
+            className="h-8 w-auto"
+          />
+          <span className="text-sm font-medium">Hecho por corDEVro</span>
+        </a>
+      </footer>
     </div>
   );
 }
