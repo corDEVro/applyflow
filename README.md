@@ -27,4 +27,4 @@
 
 ## 👋 Contacto
 
-Aplicación creada por **corDEVro** → [cordevro.com](https://cordevro.com)
+Aplicación creada por **corDEVro** → [cordevro.com](https://cordevro.netlify.app)
