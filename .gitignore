@@ -27,3 +27,6 @@ logs/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+# Netlify (config local de la CLI)
+.netlify/
