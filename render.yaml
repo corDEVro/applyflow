@@ -12,6 +12,6 @@ services:
       - key: OPENROUTER_MODEL
         value: openrouter/free
       - key: CORS_ALLOWED_ORIGINS
-        value: http://localhost:5173,https://applyflow.netlify.app
+        value: http://localhost:5173,https://applyflow-cordevro.netlify.app
       - key: OPENROUTER_REFERER
-        value: https://applyflow.netlify.app
+        value: https://applyflow-cordevro.netlify.app
