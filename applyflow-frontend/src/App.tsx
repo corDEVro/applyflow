@@ -30,7 +30,7 @@ export default function App() {
       <footer className="mt-auto py-8 px-6 bg-apply-primary text-white">
         <div className="flex flex-col items-center gap-3">
           <a
-            href="https://cordevro.com"
+            href="https://cordevro.netlify.app"
             target="_blank"
             rel="noopener noreferrer"
             title="corDEVro"
