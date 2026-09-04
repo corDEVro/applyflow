@@ -1,6 +1,7 @@
 // Componentes para mostrar un resumen de las ofertas registradas por el usuario, con la posibilidad de cambiar el estado de cada candidatura directamente desde la tabla.
-import React from "react";
+import React, { useState } from "react";
 import { type ApplicationWithPlatform } from "../../types";
+import { ConfirmDialog } from "../ConfirmDialog";
 
 const getStatusStyles = (status: string) => {
   switch (status) {
@@ -20,9 +21,18 @@ const getStatusStyles = (status: string) => {
 interface SummaryProps {
   data: ApplicationWithPlatform[];
   onStatusChange?: (id: number, newStatus: string) => void;
+  onDelete?: (id: number) => void;
 }
 
-export const Summary: React.FC<SummaryProps> = ({ data, onStatusChange }) => {
+export const Summary: React.FC<SummaryProps> = ({ data, onStatusChange, onDelete }) => {
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteId !== null && onDelete) {
+      onDelete(pendingDeleteId);
+      setPendingDeleteId(null);
+    }
+  };
   return (
     <section className="w-full">
       <div className="mb-6">
@@ -55,13 +65,18 @@ export const Summary: React.FC<SummaryProps> = ({ data, onStatusChange }) => {
                 <th className="hidden md:table-cell px-6 py-4 font-semibold text-apply-primary text-center">
                   Acción
                 </th>
+                {onDelete && (
+                  <th className="hidden md:table-cell px-6 py-4 font-semibold text-apply-primary text-center">
+                    Eliminar
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-apply-bg">
               {data.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={onDelete ? 7 : 6}
                     className="px-6 py-10 text-center text-gray-500 italic"
                   >
                     Aún no has registrado ninguna oferta.
@@ -161,6 +176,30 @@ export const Summary: React.FC<SummaryProps> = ({ data, onStatusChange }) => {
                         </svg>
                       </a>
                     </td>
+                    {onDelete && (
+                      <td className="px-6 py-4 hidden md:table-cell text-center">
+                        <button
+                          onClick={() => setPendingDeleteId(app.id)}
+                          className="text-red-400 hover:text-red-600 transition-colors"
+                          title="Eliminar oferta"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 mx-auto"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -168,6 +207,14 @@ export const Summary: React.FC<SummaryProps> = ({ data, onStatusChange }) => {
           </table>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Eliminar oferta"
+        message="¿Estás seguro de que quieres eliminar esta oferta? Esta acción no se puede deshacer."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </section>
   );
 };

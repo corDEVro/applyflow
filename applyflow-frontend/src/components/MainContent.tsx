@@ -44,6 +44,14 @@ export function MainContent({ activeButton, onOpenCvSetup }: MainContentProps) {
     });
   };
 
+  const handleDeleteApplication = (id: number) => {
+    setApplications((prev) => {
+      const next = prev.filter((app) => app.id !== id);
+      saveApplications(next);
+      return next;
+    });
+  };
+
   const handleImport = (json: string): string | null => {
     const result = importData(json);
     if (result.ok) {
@@ -60,7 +68,7 @@ export function MainContent({ activeButton, onOpenCvSetup }: MainContentProps) {
           activeButton === "Resumen de Ofertas" ? "" : "hidden"
         }`}
       >
-        <Summary data={applications} onStatusChange={handleStatusChange} />
+        <Summary data={applications} onStatusChange={handleStatusChange} onDelete={handleDeleteApplication} />
       </div>
 
       <div
